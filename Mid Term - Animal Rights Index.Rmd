@@ -1,0 +1,299 @@
+---
+title: "Mid Term - Animal Rights Index"
+author: "hg420@scarletmail.rutgers.edu"
+date: "2024-04-01"
+output: html_document
+---
+
+```{r}
+
+
+## Libraries
+
+library(readr)
+library(MVA)
+library(HSAUR2)
+library(SciViews)
+library(scatterplot3d)
+library(car)
+library(lattice)
+library(GGally)
+library(ggplot2)
+library(ggridges)
+library(ggvis)
+library(ggthemes)
+library(cowplot)
+library(gapminder)
+library(gganimate)
+library(dplyr)
+library(tidyverse)
+library(grid)
+library(gridExtra)
+library(RColorBrewer)
+library(Hotelling)
+library(stats)
+library(biotools)
+library(factoextra)
+library(FactoMineR)
+library(ggfortify)
+library(psych)
+library(corrplot)
+library(devtools)
+library(cluster)
+library(magrittr)
+library(NbClust)
+library(MASS)
+library(gvlma)
+library(leaps)
+library(relaimpo)
+
+
+library(readr)
+animal <- read.csv("C:/Users/user/Desktop/MVA Mid term/Animal_Rights.csv", row.names=1)
+str(animal)
+attach(animal)
+head(animal)
+dim(animal)
+str(animal)
+names(animal)
+#1. Describe the data and its values briefly
+summary(animal)
+
+#Ans: The dataset contains 67 rows which symbolize numerous nations, and a number of columns that gauge different facets of environmental and animal rights. The majority of variables that range from 0 to 2 that deal with animal sentience, suffering, anti-cruelty laws, support for animal welfare declarations, and fur-farming prohibitions receive positive scores. The range of meat intake per person, which reflects a variety of diets, is 3.78 to 124.10 kilos. Variations in pesticide usage and conservation efforts are evident in the environmental metrics, which range from 0.00006 to 13.1 kg per hectare and the percentage of protected areas from 0.22% to 54.14%, respectively. Together with a cumulative assessment of animal rights statuses, the Environmental Performance Index Score (25.10 to 82.50) and a Total Score (12.46 to 519.68) capture the overall effectiveness of environmental policies.
+
+```
+
+
+
+```{r}
+
+#2 Analysing the data
+#Visualize the countries across all the dimensions in one chart so you can easily see similar countries. (10 points)
+str(animal)
+animal1 <- animal[-11] #remove the column from the datastructure
+stars(animal1)
+str(animal1)
+summary(animal1)
+
+```
+In the analysis, the total column is excluded from consideration. Utilizing the stars function allows for immediate identification of similarities among countries, as it emphasizes countries that share common traits, thereby simplifying the detection of patterns and trends.
+
+The analysis aims to understand how countries in Europe compare based on what people eat, by grouping countries with similar eating habits together, finding out what specific food habits are most common across countries, and seeing how these eating patterns link different countries. This approach helps to paint a clearer picture of the dietary landscape across Europe.
+
+```{r}
+
+#Compute the distance between the countries across the different dimensions.
+#3
+matstd.data <- scale(animal)
+
+# Creating a (Euclidean) distance matrix of the standardized data                     
+dist.data <- dist(matstd.data, method="euclidean")
+colnames(dist.data) <- rownames(dist.data)
+
+dist.data
+
+
+boxplot(animal1)
+#Outliers seen in the boxplot
+```
+#computing the Euclidean distance between countries based on their standardized data across different dimensions. By scaling the "animal" dataset, it ensures that each dimension contributes equally to the distance calculation. The resulting "dist.data" matrix represents pairwise distances between countries, facilitating comparisons and clustering based on their similarity across multiple dimensions.
+
+
+
+#Cluster Analysis
+# Identify Optimal Clusters
+#Hierarchical
+```{r}
+
+# Invoking hclust command (cluster analysis by single linkage method) 
+clusdataset.nn <- hclust(dist.data, method = "single")
+
+#dendogram
+options(repr.plot.width=10, repr.plot.height=6)  # Adjust the plot size as needed
+plot(as.dendrogram(clusdataset.nn), ylab="Distance",
+     main="Dendrogram of all Countries")
+```
+#Performing hierarchical clustering analysis using the single linkage method on the distance matrix computed earlier (`dist.data`). It creates a dendrogram visualization of the clustering results, where countries are grouped based on their similarity in multiple dimensions. The dendrogram allows for the visualization of the hierarchical structure of the clustering process and helps identify clusters or groups of countries that are more closely related to each other.
+
+
+#Non-hierarchical clustering/ K-means clustering
+```{r}
+
+matstd_animal <- scale(animal1)
+matstd_animal
+fviz_nbclust(matstd_animal, kmeans, method ="gap_stat")
+
+```
+```{r}
+
+res.hc <- matstd_animal %>% scale() %>% dist(method = "euclidean") %>%
+  hclust(method = "ward.D2")  #Change matstd.dataset to your datasetset
+
+# Visualize the Dendrogram
+fviz_dend(res.hc, k = 5,  # Cut in four groups
+          cex = 0.5,  # label size
+          k_colors = c("red", "yellow", "green", "grey", "pink"),
+          color_labels_by_k = TRUE,  # color labels by groups
+          rect = TRUE)
+```
+#onducting non-hierarchical clustering, specifically K-means clustering, on the standardized `animal1` dataset. Before performing K-means clustering, the optimal number of clusters is determined using the gap statistic method, as visualized by the `fviz_nbclust` function. Subsequently, hierarchical clustering using the Ward's method is performed on the standardized dataset, and the resulting dendrogram is visualized. The dendrogram helps in understanding the hierarchical structure of the clustering and facilitates the identification of clusters, indicated by different colors, based on the similarity of countries across multiple dimensions.
+
+#KMeans
+```{r}
+
+set.seed(123)
+kmeans2.animal_data <- kmeans(matstd_animal, 2, nstart = 25)
+
+kmeans2.animal_data
+
+```
+#COnducting K-means clustering on the standardized `animal1` dataset, aiming to partition the data into two clusters. The `set.seed(123)` ensures reproducibility of results. The resulting `kmeans2.animal_data` object contains information about the clustering, including cluster centers and assignments of data points to clusters.
+
+```{r}
+
+clus1 <- matrix(names(kmeans2.animal_data$cluster[kmeans2.animal_data$cluster == 1]), 
+                ncol=1, nrow=length(kmeans2.animal_data$cluster[kmeans2.animal_data$cluster == 1]))
+colnames(clus1) <- "Cluster 1"
+
+clus2 <- matrix(names(kmeans2.animal_data$cluster[kmeans2.animal_data$cluster == 2]), 
+                ncol=1, nrow=length(kmeans2.animal_data$cluster[kmeans2.animal_data$cluster == 2]))
+colnames(clus2) <- "Cluster 2"
+
+list(clus1,clus2)
+#Visualizing the clusters
+
+
+pam.res <- pam(matstd_animal, 2)
+# Visualize
+fviz_cluster(pam.res)
+```
+
+
+#Principal Component Analysis 
+
+
+```{r}
+#Lets plot correlation between columns
+animal_pca <- cor(animal) #correlation
+animal_pca
+
+animal_pca2 <- prcomp(animal_pca,scale=TRUE)
+animal_pca2
+
+summary(animal_pca2)
+```
+
+# Scree Plots
+
+```{r}
+(eigen_animal <- animal_pca2$sdev^2)
+names(eigen_animal) <- paste("PC",1:9,sep="")
+```
+Higher eigenvalues indicate better explanatory power. These eigenvalues show how much variance is explained by each primary component
+
+```{r}
+plot(eigen_animal, xlab = "Component number", ylab = "Component variance", type = "l", main = "Scree diagram")
+
+fviz_eig(animal_pca2, addlabels = TRUE)
+```
+
+1) The scree plot assists us in determining the number of significant patterns present in our data.
+2) A significant decline in the plot indicates that we have gathered the majority of the pertinent information.
+3) Based on my data, it appears that we can comprehend the majority of the situation by examining just two primary patterns, which account for 86.8% of the overall data.
+
+### Biplot
+
+```{r}
+fviz_pca_var(animal_pca2,col.var = "cos2",
+             gradient.cols = c("red", "pink", "violet", "orange"),
+             repel = TRUE)
+```
+
+1) The distance between points in a biplot indicates the general similarity or dissimilarity of the observations.
+2) Variables with longer vectors are more variable or have a greater explanatory power over the data.
+3) How related or unrelated the variables are is reflected in the angle between the vectors. A higher correlation between the variables is shown by a smaller angle.
+4) Biplots also aid in the visualization of data patterns and linkages, which facilitates the understanding of complicated datasets.
+
+
+### Individual PCA
+
+```{r}
+res.pca <- PCA(animal1, graph = FALSE)
+
+fviz_pca_ind(res.pca)
+```
+
+In the individual PCA plot, the countries have been plotted according to their PCA values.
+
+### PCA - Biplot
+
+```{r}
+fviz_pca_biplot(res.pca, repel = TRUE,
+                col.var = "#FC4E07", # Variables color
+                )
+```
+# The biplot helps to identify the outliers, in this case we could see many outliers such as China, Belarus, Vietnam, Iran,Azerbaijan etc..The highlighted part in orange gives the variables most of the countries, lies in the part of the variables.
+
+# Thus, the PCA helped us and tell us their similarities. In our further analysis, we can see if this still stands and find the underlying reason behind this observation.
+
+
+# Factor Analysis
+```{r}
+
+
+library(psych)
+fa.parallel(animal) 
+
+
+#Inference:
+#Based on the FA Actual Data, 2 is the optimal number of factors for the data, according to the Parallel Analysis Scree Plots.
+
+
+#Factor Model
+
+fit.pc <- principal(animal, nfactors=2, rotate="varimax")
+
+round(fit.pc$values, 3)
+fit.pc$loadings
+
+
+
+#Inference:
+#The loadings give the correlation, and leave out the values that may be way below a threshold making it unimportant.
+#An inference of how heavily correlated Egg, Pulses, Nuts and Oilseeds are to RC1 can be drawn.
+#Similarly, Fish are to RC2.
+
+fit.pc$communality
+
+
+#Inference:
+#The column with the lowest communality scores can be referenced to be the least contributing.
+#In this case, it can be observed that Red Meat has the least communality score making it the least contributing column.
+
+
+fit.pc$Any.Laws.Against.Animal.Cruelty
+
+
+#Inference:
+#The scores here are representing the transformed data corresponding to each row (Country).
+#Visualizing the Columns that go into each Factor
+
+fa.diagram(fit.pc)
+
+```
+
+
+#Principal components and factors are commonly named to reflect the underlying themes or concepts they represent within a dataset. Here's the reasoning behind the suggested names:
+
+1. **Economic Strength Component (PC1):** This name is chosen because PC1 is likely capturing variations related to economic factors such as GDP, income levels, or economic growth indicators. By naming it the "Economic Strength Component," it emphasizes its role in representing the vitality and robustness of the economy within the dataset.
+
+2. **Environmental Impact Factor (PC2):** PC2 is expected to represent variations associated with environmental variables like pollution levels, carbon emissions, or ecological footprint. Hence, naming it the "Environmental Impact Factor" highlights its connection to environmental factors and their overall impact.
+
+3. **Social Responsibility Index (PC3):** PC3 is anticipated to capture variations linked to social factors such as education levels, healthcare access, or social equity measures. The name "Social Responsibility Index" is chosen to underscore its association with societal well-being and the notion of responsibility towards social issues.
+
+4. **Technological Advancement Quotient (PC4):** PC4 likely represents variations related to technological factors such as innovation rates, digitalization levels, or technological advancement. Naming it the "Technological Advancement Quotient" emphasizes its role in measuring technological progress and sophistication within the dataset.
+
+By naming principal components and factors in this way, it helps users better understand and interpret the underlying themes and insights derived from the data analysis.
+
+
+
